@@ -1,9 +1,3 @@
-# GitHub Access Token (PAT):
-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
-
-# Gist ID :
-c9a2a218bdd74ac9c02ff75dfdf2c9b1
-
 # 💾 LocalStorage String Manager
 
 ## 📋 Projekt áttekintése
