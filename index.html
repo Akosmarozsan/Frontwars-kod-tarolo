@@ -3,88 +3,265 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helyi Adattároló Demo</title>
+    <title>GitHub Gist Adattároló Demo</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-slate-800 rounded-xl shadow-2xl p-6 border border-slate-700">
-        <h1 class="text-2xl font-bold mb-2 text-indigo-400">Helyi Szövegtároló</h1>
-        <p class="text-slate-400 text-sm mb-6">A beírt szöveg a böngésződ helyi tárolójában (LocalStorage) őrződik meg.</p>
+    <div class="max-w-xl w-full bg-slate-800 rounded-xl shadow-2xl p-6 border border-slate-700">
+        <h1 class="text-2xl font-bold mb-2 text-blue-400 flex items-center gap-2">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+            GitHub Tároló (Gist)
+        </h1>
+        <p class="text-slate-400 text-sm mb-6">A szöveg a saját GitHub fiókodban, egy Gist `.txt` fájlban tárolódik a GitHub API-n keresztül.</p>
         
-        <div class="space-y-4">
+        <div id="setupSection" class="space-y-4 mb-6 pb-6 border-b border-slate-700">
+            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">1. GitHub API Beállítás</h2>
+            <p class="text-xs text-slate-400">Szükséged van egy GitHub Personal Access Token-re (Classic) a 'gist' jogosultsággal.</p>
+            
             <div>
-                <label for="strInput" class="block text-sm font-medium text-slate-300 mb-1">Elmentendő szöveg:</label>
-                <textarea id="strInput" rows="4" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition" placeholder="Írj be valamit..."></textarea>
+                <label for="tokenInput" class="block text-sm font-medium text-slate-300 mb-1">GitHub Access Token (PAT):</label>
+                <input type="password" id="tokenInput" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+            </div>
+            
+            <div>
+                <label for="gistIdInput" class="block text-sm font-medium text-slate-300 mb-1">Gist ID (Opcionális, újhoz hagyd üresen):</label>
+                <input type="text" id="gistIdInput" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Hagyd üresen új létrehozásához">
+            </div>
+            
+            <button id="saveConfigBtn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
+                Beállítások mentése böngészőbe
+            </button>
+        </div>
+
+        <div id="editorSection" class="space-y-4 opacity-50 pointer-events-none transition-opacity duration-300">
+            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                <span>2. Fájl szerkesztése</span>
+                <span id="gistLink" class="text-xs text-blue-400 hover:underline hidden">
+                    <a href="#" target="_blank" id="gistUrlAnchor">Megnyitás GitHubon ↗</a>
+                </span>
+            </h2>
+            <div>
+                <label for="strInput" class="block text-sm font-medium text-slate-300 mb-1">Fájl tartalma (data.txt):</label>
+                <textarea id="strInput" rows="6" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition font-mono" placeholder="Írd ide a menteni kívánt szöveget..."></textarea>
             </div>
             
             <div class="flex gap-3">
-                <button id="saveBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 px-4 rounded-lg transition duration-200 shadow-md hover:shadow-indigo-500/20">
-                    Mentés
+                <button id="loadBtn" class="flex-1 bg-slate-600 hover:bg-slate-500 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex justify-center items-center">
+                    <span id="loadText">Lekérés a GitHubról</span>
+                    <svg id="loadSpinner" class="animate-spin ml-2 h-4 w-4 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 </button>
-                <button id="clearBtn" class="bg-slate-700 hover:bg-red-600 text-slate-300 hover:text-white font-medium py-2 px-4 rounded-lg transition duration-200">
+                <button id="saveBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex justify-center items-center shadow-md hover:shadow-blue-500/20">
+                    <span id="saveText">Mentés a GitHubra</span>
+                    <svg id="saveSpinner" class="animate-spin ml-2 h-4 w-4 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </button>
+                <button id="deleteBtn" class="bg-slate-700 hover:bg-red-600 text-slate-300 hover:text-white font-medium py-2 px-4 rounded-lg transition duration-200">
                     Törlés
                 </button>
             </div>
 
-            <div id="statusMsg" class="text-sm font-medium text-emerald-400 h-5 opacity-0 transition-opacity duration-300">
-                Sikeresen elmentve!
-            </div>
-        </div>
-
-        <div class="mt-8 pt-6 border-t border-slate-700">
-            <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Jelenleg tárolt érték:</h2>
-            <div id="preview" class="p-3 bg-slate-900/50 rounded-lg border border-slate-800 text-slate-300 text-sm italic break-words min-h-[40px]">
-                (Nincs elmentett adat)
+            <div id="statusMsg" class="text-sm font-medium text-emerald-400 h-5 opacity-0 transition-opacity duration-300 text-center">
+                Státusz üzenet
             </div>
         </div>
     </div>
 
     <script>
+        const tokenInput = document.getElementById('tokenInput');
+        const gistIdInput = document.getElementById('gistIdInput');
+        const saveConfigBtn = document.getElementById('saveConfigBtn');
+        const editorSection = document.getElementById('editorSection');
+        
         const strInput = document.getElementById('strInput');
+        const loadBtn = document.getElementById('loadBtn');
         const saveBtn = document.getElementById('saveBtn');
-        const clearBtn = document.getElementById('clearBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
         const statusMsg = document.getElementById('statusMsg');
-        const preview = document.getElementById('preview');
+        
+        const gistLink = document.getElementById('gistLink');
+        const gistUrlAnchor = document.getElementById('gistUrlAnchor');
 
-        const STORAGE_KEY = 'my_saved_string';
+        const CONFIG_KEY = 'github_gist_config';
+        const FILENAME = 'data.txt';
+        
+        let config = { token: '', gistId: '' };
 
-        function loadData() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved !== null && saved !== '') {
-                strInput.value = saved;
-                preview.textContent = saved;
-                preview.classList.remove('italic', 'text-slate-500');
-                preview.classList.add('text-slate-200');
-            } else {
-                strInput.value = '';
-                preview.textContent = '(Nincs elmentett adat)';
-                preview.classList.add('italic', 'text-slate-500');
-                preview.classList.remove('text-slate-200');
+        // Configuration handling
+        function loadConfig() {
+            const saved = localStorage.getItem(CONFIG_KEY);
+            if (saved) {
+                config = JSON.parse(saved);
+                tokenInput.value = config.token;
+                gistIdInput.value = config.gistId;
+                updateEditorState();
             }
         }
 
-        function showStatus(text, colorClass = 'text-emerald-400') {
-            statusMsg.textContent = text;
-            statusMsg.className = `text-sm font-medium h-5 transition-opacity duration-300 opacity-100 ${colorClass}`;
-            setTimeout(() => {
-                statusMsg.classList.add('opacity-0');
-            }, 2000);
+        function updateEditorState() {
+            if (config.token) {
+                editorSection.classList.remove('opacity-50', 'pointer-events-none');
+                if (config.gistId) {
+                    gistLink.classList.remove('hidden');
+                    gistUrlAnchor.href = `https://gist.github.com/${config.gistId}`;
+                    loadFromGitHub(); // Auto load if we have ID
+                } else {
+                    gistLink.classList.add('hidden');
+                    strInput.value = '';
+                }
+            } else {
+                editorSection.classList.add('opacity-50', 'pointer-events-none');
+                gistLink.classList.add('hidden');
+            }
         }
 
-        saveBtn.addEventListener('click', () => {
-            const val = strInput.value;
-            localStorage.setItem(STORAGE_KEY, val);
-            loadData();
-            showStatus('Sikeresen elmentve!');
+        saveConfigBtn.addEventListener('click', () => {
+            config.token = tokenInput.value.trim();
+            config.gistId = gistIdInput.value.trim();
+            localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+            showStatus('Beállítások elmentve!', 'text-emerald-400');
+            updateEditorState();
         });
 
-        clearBtn.addEventListener('click', () => {
-            localStorage.removeItem(STORAGE_KEY);
-            loadData();
-            showStatus('Adatok törölve!', 'text-rose-400');
-        });
+        // UI Helpers
+        function showStatus(text, colorClass = 'text-emerald-400') {
+            statusMsg.textContent = text;
+            statusMsg.className = `text-sm font-medium h-5 transition-opacity duration-300 opacity-100 ${colorClass} text-center`;
+            setTimeout(() => {
+                statusMsg.classList.add('opacity-0');
+            }, 3000);
+        }
 
-        loadData();
+        function setLoading(btnId, isLoading) {
+            const btn = document.getElementById(btnId);
+            const text = document.getElementById(btnId.replace('Btn', 'Text'));
+            const spinner = document.getElementById(btnId.replace('Btn', 'Spinner'));
+            
+            btn.disabled = isLoading;
+            if (isLoading) {
+                btn.classList.add('opacity-75', 'cursor-not-allowed');
+                spinner.classList.remove('hidden');
+            } else {
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                spinner.classList.add('hidden');
+            }
+        }
+
+        // GitHub API interaction
+        async function fetchGitHubAPI(method, endpoint, data = null) {
+            const url = endpoint.startsWith('http') ? endpoint : `https://api.github.com${endpoint}`;
+            const options = {
+                method: method,
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Authorization': `token ${config.token}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+            if (data) options.body = JSON.stringify(data);
+            
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.message || `HTTP error! status: ${response.status}`);
+            }
+            return response.status !== 204 ? response.json() : null;
+        }
+
+        async function loadFromGitHub() {
+            if (!config.gistId) {
+                showStatus('Nincs Gist ID megadva!', 'text-amber-400');
+                return;
+            }
+            
+            setLoading('loadBtn', true);
+            try {
+                const gist = await fetchGitHubAPI('GET', `/gists/${config.gistId}`);
+                if (gist.files && gist.files[FILENAME]) {
+                    strInput.value = gist.files[FILENAME].content;
+                    showStatus('Adatok betöltve a GitHubról!');
+                } else {
+                    strInput.value = '';
+                    showStatus(`A fájl (${FILENAME}) nem található a Gistben.`, 'text-amber-400');
+                }
+            } catch (error) {
+                console.error(error);
+                showStatus(`Hiba: ${error.message}`, 'text-rose-400');
+            } finally {
+                setLoading('loadBtn', false);
+            }
+        }
+
+        async function saveToGitHub() {
+            const content = strInput.value;
+            setLoading('saveBtn', true);
+            
+            const payload = {
+                description: "Szövegtároló alkalmazás adata",
+                public: false,
+                files: {
+                    [FILENAME]: {
+                        content: content || " " // Gist cannot have empty files, send space if empty
+                    }
+                }
+            };
+
+            try {
+                if (config.gistId) {
+                    // Update existing
+                    await fetchGitHubAPI('PATCH', `/gists/${config.gistId}`, payload);
+                    showStatus('Sikeresen frissítve a GitHubon!');
+                } else {
+                    // Create new
+                    const newGist = await fetchGitHubAPI('POST', '/gists', payload);
+                    config.gistId = newGist.id;
+                    gistIdInput.value = newGist.id;
+                    localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+                    showStatus('Új Gist létrehozva és elmentve!');
+                    updateEditorState();
+                }
+            } catch (error) {
+                console.error(error);
+                showStatus(`Hiba: ${error.message}`, 'text-rose-400');
+            } finally {
+                setLoading('saveBtn', false);
+            }
+        }
+
+        async function deleteFromGitHub() {
+            if (!config.gistId) {
+                showStatus('Nincs törölhető Gist azonosítva!', 'text-amber-400');
+                return;
+            }
+            
+            if(!confirm("Biztosan törölni szeretnéd a teljes Gist-et a GitHubról? Ez a folyamat nem vonható vissza.")) return;
+
+            try {
+                deleteBtn.disabled = true;
+                deleteBtn.classList.add('opacity-50');
+                await fetchGitHubAPI('DELETE', `/gists/${config.gistId}`);
+                
+                config.gistId = '';
+                gistIdInput.value = '';
+                strInput.value = '';
+                localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+                
+                showStatus('Gist véglegesen törölve a GitHubról!', 'text-rose-400');
+                updateEditorState();
+            } catch (error) {
+                console.error(error);
+                showStatus(`Hiba: ${error.message}`, 'text-rose-400');
+            } finally {
+                deleteBtn.disabled = false;
+                deleteBtn.classList.remove('opacity-50');
+            }
+        }
+
+        // Event listeners
+        loadBtn.addEventListener('click', loadFromGitHub);
+        saveBtn.addEventListener('click', saveToGitHub);
+        deleteBtn.addEventListener('click', deleteFromGitHub);
+
+        // Init
+        loadConfig();
     </script>
 </body>
 </html>
