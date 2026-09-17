@@ -16,20 +16,22 @@
         
         <div id="setupSection" class="space-y-4 mb-6 pb-6 border-b border-slate-700">
             <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">1. GitHub API Beállítás</h2>
-            <p class="text-xs text-slate-400">Szükséged van egy GitHub Personal Access Token-re (Classic) a 'gist' jogosultsággal.</p>
+            <p class="text-xs text-rose-400 font-bold border border-rose-900 bg-rose-900/20 p-2 rounded">
+                FIGYELEM: A token és az ID fixen bele van írva a kódba! Ha ezt publikus weblapként közzéteszed, bárki láthatja a tokenedet!
+            </p>
             
             <div>
                 <label for="tokenInput" class="block text-sm font-medium text-slate-300 mb-1">GitHub Access Token (PAT):</label>
-                <input type="password" id="tokenInput" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                <input type="password" id="tokenInput" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" value="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">
             </div>
             
             <div>
-                <label for="gistIdInput" class="block text-sm font-medium text-slate-300 mb-1">Gist ID (Opcionális, újhoz hagyd üresen):</label>
-                <input type="text" id="gistIdInput" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Hagyd üresen új létrehozásához">
+                <label for="gistIdInput" class="block text-sm font-medium text-slate-300 mb-1">Gist ID:</label>
+                <input type="text" id="gistIdInput" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" value="c9a2a218bdd74ac9c02ff75dfdf2c9b1">
             </div>
             
             <button id="saveConfigBtn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
-                Beállítások mentése böngészőbe
+                Beállítások frissítése
             </button>
         </div>
 
@@ -80,21 +82,13 @@
         const gistLink = document.getElementById('gistLink');
         const gistUrlAnchor = document.getElementById('gistUrlAnchor');
 
-        const CONFIG_KEY = 'github_gist_config';
         const FILENAME = 'data.txt';
         
-        let config = { token: '', gistId: '' };
-
-        // Configuration handling
-        function loadConfig() {
-            const saved = localStorage.getItem(CONFIG_KEY);
-            if (saved) {
-                config = JSON.parse(saved);
-                tokenInput.value = config.token;
-                gistIdInput.value = config.gistId;
-                updateEditorState();
-            }
-        }
+        // Fixen beégetett értékek (alapértelmezett)
+        let config = { 
+            token: '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', 
+            gistId: 'c9a2a218bdd74ac9c02ff75dfdf2c9b1' 
+        };
 
         function updateEditorState() {
             if (config.token) {
@@ -102,7 +96,7 @@
                 if (config.gistId) {
                     gistLink.classList.remove('hidden');
                     gistUrlAnchor.href = `https://gist.github.com/${config.gistId}`;
-                    loadFromGitHub(); // Auto load if we have ID
+                    loadFromGitHub(); 
                 } else {
                     gistLink.classList.add('hidden');
                     strInput.value = '';
@@ -116,12 +110,10 @@
         saveConfigBtn.addEventListener('click', () => {
             config.token = tokenInput.value.trim();
             config.gistId = gistIdInput.value.trim();
-            localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
-            showStatus('Beállítások elmentve!', 'text-emerald-400');
+            showStatus('Beállítások frissítve a memóriában!', 'text-emerald-400');
             updateEditorState();
         });
 
-        // UI Helpers
         function showStatus(text, colorClass = 'text-emerald-400') {
             statusMsg.textContent = text;
             statusMsg.className = `text-sm font-medium h-5 transition-opacity duration-300 opacity-100 ${colorClass} text-center`;
@@ -145,7 +137,6 @@
             }
         }
 
-        // GitHub API interaction
         async function fetchGitHubAPI(method, endpoint, data = null) {
             const url = endpoint.startsWith('http') ? endpoint : `https://api.github.com${endpoint}`;
             const options = {
@@ -199,22 +190,19 @@
                 public: false,
                 files: {
                     [FILENAME]: {
-                        content: content || " " // Gist cannot have empty files, send space if empty
+                        content: content || " "
                     }
                 }
             };
 
             try {
                 if (config.gistId) {
-                    // Update existing
                     await fetchGitHubAPI('PATCH', `/gists/${config.gistId}`, payload);
                     showStatus('Sikeresen frissítve a GitHubon!');
                 } else {
-                    // Create new
                     const newGist = await fetchGitHubAPI('POST', '/gists', payload);
                     config.gistId = newGist.id;
                     gistIdInput.value = newGist.id;
-                    localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
                     showStatus('Új Gist létrehozva és elmentve!');
                     updateEditorState();
                 }
@@ -242,7 +230,6 @@
                 config.gistId = '';
                 gistIdInput.value = '';
                 strInput.value = '';
-                localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
                 
                 showStatus('Gist véglegesen törölve a GitHubról!', 'text-rose-400');
                 updateEditorState();
@@ -255,13 +242,12 @@
             }
         }
 
-        // Event listeners
         loadBtn.addEventListener('click', loadFromGitHub);
         saveBtn.addEventListener('click', saveToGitHub);
         deleteBtn.addEventListener('click', deleteFromGitHub);
 
-        // Init
-        loadConfig();
+        // Inicializálás az alapértelmezett beégetett adatokkal
+        updateEditorState();
     </script>
 </body>
 </html>
